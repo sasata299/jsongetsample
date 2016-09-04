@@ -2,16 +2,16 @@ package com.example.sasata299.jsongetsample;
 
 import android.os.AsyncTask;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * Created by sasata299 on 16/09/03.
@@ -56,17 +56,35 @@ public class AsyncJsonLoader extends AsyncTask<String, Integer, JSONObject> {
 
     @Override
     protected JSONObject doInBackground(String... _uri) {
-        HttpClient httpClient = new DefaultHttpClient();
-        HttpGet httpGet = new HttpGet(_uri[0]);
+        StringBuilder result = new StringBuilder();
+        URL url = null;
+
         try {
-            HttpResponse httpResponse = httpClient.execute(httpGet);
-            if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                httpResponse.getEntity().writeTo(outputStream);
-                outputStream.close();
-                return new JSONObject(outputStream.toString());
+            url = new URL(_uri[0]);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        HttpURLConnection con = null;
+
+        try {
+            con = (HttpURLConnection)url.openConnection();
+            con.connect();
+
+            if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                InputStream in = con.getInputStream();
+
+                StringBuffer sb = new StringBuffer();
+                String st = "";
+
+                BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+                while ((st = br.readLine()) != null) {
+                    sb.append(st);
+                }
+
+                in.close();
+                return new JSONObject(sb.toString());
             } else {
-                httpResponse.getEntity().getContent().close();
                 throw new IOException();
             }
         } catch (IOException e) {
